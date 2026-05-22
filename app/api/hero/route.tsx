@@ -267,6 +267,18 @@ export async function GET(request: Request) {
         { name: "ProximaNova", data: proximaNovaBold, weight: 700 },
         { name: "DMMono", data: dmMono, weight: 400 },
       ],
+      loadAdditionalAsset: async (code, segment) => {
+        if (code === "emoji") {
+          const codePoint = [...segment]
+            .map((c) => c.codePointAt(0)!.toString(16))
+            .join("-")
+          const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${codePoint}.svg`
+          const res = await fetch(url)
+          const text = await res.text()
+          return `data:image/svg+xml;base64,${Buffer.from(text).toString("base64")}`
+        }
+        return ""
+      },
     }
   );
 

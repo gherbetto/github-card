@@ -111,7 +111,7 @@ function desktopLayout(stats: Stats) {
     <div
       style={{
         width: 860,
-        height: 370,
+        height: 270,
         background: "#1D2528",
         border: "1px solid #21262d",
         borderRadius: 12,
@@ -151,13 +151,13 @@ function desktopLayout(stats: Stats) {
           </span>
         </div>
         <span style={{ color: "#8b949e", fontSize: 11, letterSpacing: "0.03em", marginBottom: 15 }}>
-          frontend engineer · EU ready · 5+ years exp.
+          frontend engineer · 3+ yrs exp.
         </span>
         <span style={{ color: "#c9d1d9", fontSize: 12, lineHeight: 1.85, maxWidth: 460}}>
           {"focused on clean foundations and long-term maintainability."}
         </span>
         <span style={{ color: "#c9d1d9", fontSize: 12, lineHeight: 1.85, maxWidth: 460 }}>
-          {"lately gravitating toward 3D on the web: Three.js, WebGL, and the weird space where design systems meet spatial UI."}
+          {"30+ production projects shipped — now deepening into React/TS."}
         </span>
       </div>
 
@@ -165,8 +165,9 @@ function desktopLayout(stats: Stats) {
       <Pills direction="column" items={[
         { text: "🙋‍♂️ open to work", accent: true },
         { text: "📍 Moldova, MD", accent: false },
-        { text: `👥 ${stats.followers} followers`, accent: false },
-        { text: `📦 ${stats.repos} repos`, accent: false },
+        // { text: "⌛ 1000+ hrs coded", accent: false },
+        // { text: `👥 ${stats.followers} followers`, accent: false },
+        // { text: `📦 ${stats.repos} repos`, accent: false },
       ]} />
       </div>
 
@@ -186,7 +187,7 @@ function mobileLayout(stats: Stats) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
+        padding: "40px",
         fontFamily: "DMMono",
         position: "relative",
         overflow: "hidden",
@@ -207,11 +208,11 @@ function mobileLayout(stats: Stats) {
             {stats.lastName}
           </span>
         </div>
-        <span style={{ color: "#8b949e", fontSize: 10, marginBottom: 14 }}>
-          frontend engineer · EU ready · 5+ years exp.
+        <span style={{ color: "#8b949e", fontSize: 10, marginBottom: 12 }}>
+          frontend engineer · 3+ yrs exp.
         </span>
         <span style={{ color: "#c9d1d9", fontSize: 10, lineHeight: 1.85, maxWidth: 460, marginBottom: 14 }}>
-          {"clean foundations, long-term maintainability. gravitating toward 3D web — Three.js, WebGL, spatial UI."}
+          {"focused on clean foundations and long-term maintainability. 30+ production projects shipped — now deepening into React/TS."}
         </span>
       </div>
 
@@ -219,8 +220,9 @@ function mobileLayout(stats: Stats) {
       <Pills direction="row" fontSize={10} items={[
         { text: "🙋‍♂️ open to work", accent: true },
         { text: "📍 Moldova", accent: false },
-        { text: `👥 ${stats.followers}`, accent: false },
-        { text: `📦 ${stats.repos}`, accent: false },
+        // { text: "⌛ 1000+ hrs", accent: false },
+        // { text: `👥 ${stats.followers}`, accent: false },
+        // { text: `📦 ${stats.repos}`, accent: false },
       ]} />
     </div>
   );
@@ -282,7 +284,7 @@ export async function GET(request: Request) {
     }
   );
 
-   return new Response(svg, {
+  return new Response(svg, {
     headers: {
       "Content-Type": "image/svg+xml",
       "Cache-Control": "public, max-age=3600",

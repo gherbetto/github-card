@@ -2,6 +2,7 @@ import satori from "satori";
 import { readFile } from "fs/promises";
 import path from "path";
 import { getGithubUser, getContributions } from "@/lib/github";
+import { getAllTimeHours, secondsToHours } from "@/lib/wakatime";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,7 @@ type Stats = {
   login: string;
   firstName: string;
   lastName: string;
+  hoursCoded: number;
 };
 
 // ─── animated glow — shared between both layouts ──────────────────────────────
@@ -165,7 +167,7 @@ function desktopLayout(stats: Stats) {
       <Pills direction="column" items={[
         { text: "🙋‍♂️ open to work", accent: true },
         { text: "📍 Moldova, MD", accent: false },
-        // { text: "⌛ 1000+ hrs coded", accent: false },
+        { text: `⌛ ${stats.hoursCoded} hrs coded`, accent: false },
         // { text: `👥 ${stats.followers} followers`, accent: false },
         // { text: `📦 ${stats.repos} repos`, accent: false },
       ]} />
@@ -178,16 +180,16 @@ function mobileLayout(stats: Stats) {
   return (
     <div
       style={{
-        width: 400,
-        height: 260,
+        width: 450,
+        height: 270,
         background: "#1D2528",
         border: "1px solid #21262d",
         borderRadius: 12,
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
-        padding: "40px",
+        padding: "30px",
         fontFamily: "DMMono",
         position: "relative",
         overflow: "hidden",
@@ -197,30 +199,30 @@ function mobileLayout(stats: Stats) {
 
       {/* left */}
       <div style={{ display: "flex", flexDirection: "column"}}>
-        <span style={{ color: "#319860", fontSize: 10, letterSpacing: "0.07em", marginBottom: 10 }}>
+        <span style={{ color: "#319860", fontSize: 12, letterSpacing: "0.07em", marginBottom: 10 }}>
           {`// ${stats.login}.dev`}
         </span>
         <div style={{ display: "flex", marginBottom: 4 }}>
-          <span style={{ fontFamily: "ProximaNova", fontSize: 30, fontWeight: 700, color: "#fff", lineHeight: 1.05, marginRight: 10 }}>
+          <span style={{ fontFamily: "ProximaNova", fontSize: 35, fontWeight: 700, color: "#fff", lineHeight: 1.05, marginRight: 10 }}>
             {stats.firstName}
           </span>
-          <span style={{ fontFamily: "ProximaNova", fontSize: 30, fontWeight: 700, color: "#319860", lineHeight: 1.05 }}>
+          <span style={{ fontFamily: "ProximaNova", fontSize: 35, fontWeight: 700, color: "#319860", lineHeight: 1.05 }}>
             {stats.lastName}
           </span>
         </div>
-        <span style={{ color: "#8b949e", fontSize: 10, marginBottom: 12 }}>
+        <span style={{ color: "#8b949e", fontSize: 12, marginBottom: 12 }}>
           frontend engineer · 3+ yrs exp.
         </span>
-        <span style={{ color: "#c9d1d9", fontSize: 10, lineHeight: 1.85, maxWidth: 460, marginBottom: 14 }}>
+        <span style={{ color: "#c9d1d9", fontSize: 12, lineHeight: 1.85, maxWidth: 460, marginBottom: 14 }}>
           {"focused on clean foundations and long-term maintainability. 30+ production projects shipped — now deepening into React/TS."}
         </span>
       </div>
 
       {/* pills wrap into rows on narrow canvas */}
-      <Pills direction="row" fontSize={10} items={[
+      <Pills direction="row" items={[
         { text: "🙋‍♂️ open to work", accent: true },
         { text: "📍 Moldova", accent: false },
-        // { text: "⌛ 1000+ hrs", accent: false },
+        { text: `⌛ ${stats.hoursCoded} hrs coded`, accent: false },
         // { text: `👥 ${stats.followers}`, accent: false },
         // { text: `📦 ${stats.repos}`, accent: false },
       ]} />
@@ -234,16 +236,17 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const isMobile = searchParams.get("v") === "mobile";
 
-  const width = isMobile ? 400 : 860;
-  const height = isMobile ? 260 : 370;
+  const width = isMobile ? 450 : 860;
+  const height = isMobile ? 270 : 270;
 
   // load fonts and github data at the same time
-  const [dmMono, proximaNovaRegular , proximaNovaBold, user, contributions] = await Promise.all([
+  const [dmMono, proximaNovaRegular , proximaNovaBold, user, contributions,allTimeHours] = await Promise.all([
     readFile(path.join(process.cwd(), "public/fonts/DMMono-Regular.ttf")),
     readFile(path.join(process.cwd(), "public/fonts/ProximaNova-Regular.ttf")),
     readFile(path.join(process.cwd(), "public/fonts/ProximaNova-Bold.ttf")),
     getGithubUser(),
     getContributions(),
+    getAllTimeHours(),
   ]);
 
   const [firstName, lastName] = (user.name as string).split(" ");
@@ -257,6 +260,7 @@ export async function GET(request: Request) {
     login: user.login,
     firstName,
     lastName,
+    hoursCoded: secondsToHours(allTimeHours.total_seconds),
   };
 
   const svg = await satori(

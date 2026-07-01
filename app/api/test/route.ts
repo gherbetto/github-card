@@ -1,4 +1,5 @@
-import { getGithubUser, getContributions } from "@/lib/github";
+// import { getGithubUser, getContributions } from "@/lib/github";
+import { getAllTimeHours } from "@/lib/wakatime";
 
 // export async function GET() {
 //     return Response.json({
@@ -25,10 +26,9 @@ import { getGithubUser, getContributions } from "@/lib/github";
 // }
 
 export async function GET() {
-  const [user, contributions] = await Promise.all([
-    getGithubUser(),
-    getContributions(),
+  const [allTimeHours] = await Promise.all([
+    getAllTimeHours(),
   ]);
 
-  return Response.json({ user, contributions });
+  return Response.json({ allTimeHours });
 }

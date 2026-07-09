@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { getGithubUser, getContributions } from "@/lib/github";
 import { getAllTimeHours, secondsToHours } from "@/lib/wakatime";
+import { stripSatoriWrapper } from "@/lib/svg-utils";
 
 export const runtime = "nodejs";
 
@@ -40,37 +41,86 @@ type Stats = {
   hoursCoded: number;
 };
 
-// ─── animated glow — shared between both layouts ──────────────────────────────
+// ─── post-process wrapper — CSS glow at root (readme-aura pattern) ───────────
 
-function AnimatedGlow() {
-  return (
-    <svg
-      style={{ position: "absolute", top: -120, right: -100, overflow: "visible" }}
-      width="300"
-      height="300"
-    >
-      <defs>
-        <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(63,185,80,0.18)" />
-          <stop offset="70%" stopColor="rgba(63,185,80,0)" />
-        </radialGradient>
-        <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(63,185,80,0.08)" />
-          <stop offset="70%" stopColor="rgba(63,185,80,0)" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="150" cy="150" rx="140" ry="140" fill="url(#glow2)">
-        <animate attributeName="rx" values="130;150;130" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-        <animate attributeName="ry" values="130;150;130" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-        <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-      </ellipse>
-      <ellipse cx="150" cy="150" rx="80" ry="80" fill="url(#glow1)">
-        <animate attributeName="rx" values="80;95;80" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-        <animate attributeName="ry" values="80;95;80" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
-      </ellipse>
-    </svg>
-  );
+function getGlowOffset(isMobile: boolean) {
+  return isMobile ? { x: 250, y: -50 } : { x: 650, y: -50 };
+}
+
+/** Insert glow after Satori's opaque card fill — not before, or it gets painted over. */
+function injectGlowAfterBackground(innerSvg: string, glowLayer: string) {
+  const marker = 'fill="#1D2528"';
+  const markerIdx = innerSvg.indexOf(marker);
+  if (markerIdx === -1) return innerSvg + glowLayer;
+
+  const closeIdx = innerSvg.indexOf("/>", markerIdx);
+  if (closeIdx === -1) return innerSvg + glowLayer;
+
+  const insertAt = closeIdx + 2;
+  return innerSvg.slice(0, insertAt) + glowLayer + innerSvg.slice(insertAt);
+}
+
+function wrapAnimatedHero(
+  innerSvg: string,
+  opts: { width: number; height: number; isMobile: boolean }
+) {
+  const { width, height, isMobile } = opts;
+  const { x: glowX, y: glowY } = getGlowOffset(isMobile);
+
+  const glowLayer = `
+    <g transform="translate(${glowX}, ${glowY})">
+      <style>
+        @keyframes hero-drift-r {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.85; }
+          20% { transform: translate(10px, -6px) scale(1.03); opacity: 0.92; }
+          45% { transform: translate(24px, -14px) scale(1.07); opacity: 1; }
+          70% { transform: translate(14px, 2px) scale(1.04); opacity: 0.9; }
+        }
+        @keyframes hero-drift-l {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+          25% { transform: translate(-10px, 5px) scale(1.04); opacity: 0.88; }
+          50% { transform: translate(-20px, 12px) scale(1.08); opacity: 1; }
+          75% { transform: translate(-8px, -3px) scale(1.03); opacity: 0.86; }
+        }
+        @keyframes hero-flow {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.85; }
+          30% { transform: translate(8px, -10px) scale(1.06); opacity: 0.72; }
+          60% { transform: translate(-6px, 6px) scale(1.1); opacity: 0.58; }
+        }
+        #hero-glow-1 { animation: hero-drift-r 7s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+        #hero-glow-2 { animation: hero-drift-l 8.5s cubic-bezier(0.37, 0, 0.63, 1) infinite 0.2s; }
+        #hero-glow-3 { animation: hero-flow 5s cubic-bezier(0.37, 0, 0.63, 1) infinite 0.5s; }
+      </style>
+      <ellipse id="hero-glow-1" cx="120" cy="120" rx="140" ry="110" fill="url(#hero-g1)" />
+      <ellipse id="hero-glow-2" cx="170" cy="135" rx="110" ry="85" fill="url(#hero-g2)" />
+      <ellipse id="hero-glow-3" cx="75" cy="105" rx="95" ry="75" fill="url(#hero-g3)" />
+    </g>`;
+
+  const layeredInner = injectGlowAfterBackground(innerSvg, glowLayer);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <defs>
+    <clipPath id="hero-clip">
+      <rect width="${width}" height="${height}" rx="12" ry="12" />
+    </clipPath>
+    <radialGradient id="hero-g1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgb(63,185,80)" stop-opacity="0.50" />
+      <stop offset="70%" stop-color="rgb(63,185,80)" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="hero-g2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgb(49,152,96)" stop-opacity="0.40" />
+      <stop offset="70%" stop-color="rgb(49,152,96)" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="hero-g3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgb(63,185,80)" stop-opacity="0.3" />
+      <stop offset="70%" stop-color="rgb(63,185,80)" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <g clip-path="url(#hero-clip)">
+    ${layeredInner}
+  </g>
+</svg>`;
 }
 
 // ─── pills — shared helper ────────────────────────────────────────────────────
@@ -87,7 +137,7 @@ function Pills({ items, fontSize = 11, direction = "column", }: { items: { text:
         <div
           key={pill.text}
           style={{
-            background: pill.accent ? "rgba(49,152,96,0.1)" : "#161b22",
+            background: pill.accent ? "#1F302E" : "#161b22",
             border: `1px solid ${pill.accent ? "rgba(49,152,96,0.4)" : "#21262d"}`,
             borderRadius: 20,
             padding: "6px 14px",
@@ -125,19 +175,7 @@ function desktopLayout(stats: Stats) {
         overflow: "hidden",
       }}
     >
-      <AnimatedGlow />
-
-      {/* bottom divider */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          width: "100%",
-          height: 2,
-          background: "linear-gradient(90deg, transparent, rgba(63,185,80,0.3), transparent)",
-        }}
-      />
+      
 
       {/* left */}
       <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -195,8 +233,6 @@ function mobileLayout(stats: Stats) {
         overflow: "hidden",
       }}
     >
-      <AnimatedGlow />
-
       {/* left */}
       <div style={{ display: "flex", flexDirection: "column"}}>
         <span style={{ color: "#319860", fontSize: 12, letterSpacing: "0.07em", marginBottom: 10 }}>
@@ -263,7 +299,7 @@ export async function GET(request: Request) {
     hoursCoded: secondsToHours(allTimeHours.total_seconds),
   };
 
-  const svg = await satori(
+  const rawSvg = await satori(
     isMobile ? mobileLayout(stats) : desktopLayout(stats),
     {
       width,
@@ -287,6 +323,9 @@ export async function GET(request: Request) {
       },
     }
   );
+
+  const innerSvg = stripSatoriWrapper(rawSvg);
+  const svg = wrapAnimatedHero(innerSvg, { width, height, isMobile });
 
   return new Response(svg, {
     headers: {

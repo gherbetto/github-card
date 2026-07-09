@@ -7,6 +7,40 @@
 - Satori turns JSX layouts into `foreignObject` trees; nested `<svg>` + `<animate>` buried inside often don't run in GitHub's image sandbox. Root-level SMIL survives.
 - **Fix for hero/buttons:** same pattern as carousel — render static layout with Satori, then post-process the SVG string to inject animation at the root.
 
+### comparing our animation method vs readme-aura
+
+downloaded both svgs and diffed them.
+
+**our button** (`email-button.svg`):
+- shimmer ends up as `<image href="data:image/svg+xml;utf8,...<animateTransform>...">`
+- so the animation is trapped *inside* an image payload, not as live svg nodes in the document
+- opens fine in browser when you hit the api url directly, but frozen on github readme
+
+**readme-aura button** (`readme-aura-button.svg`):
+- animation is a real nested `<svg>` with `<animateTransform>` on the gradient
+- no animation buried inside `<image href="data:...">` for the animated part
+- that's why it actually moves on the profile
+
+so the issue isn't really "github blocks all animation" — it's **where** the animation ends up in the final svg tree.
+
+### how readme-aura pulls it off
+
+their docs talk about `<style>` + `@keyframes` or SMIL in jsx, but the important part is in `renderer.ts` **after** satori runs:
+
+1. they render with satori like us
+2. then they **unpack** any `<image href="data:image/svg+xml;utf8,...">` back into real `<svg>...</svg>` tags (decode uri, pull inner content out)
+3. if you used a `<style>` block in jsx, they extract it before satori and inject it into `<defs><style>...</style></defs>` in the final file
+
+satori alone doesn't "run" css animations or guarantee nested svg stays as svg — readme-aura adds that post-process layer. we're missing that step (or the carousel-style root inject).
+
+### two ways to fix hero + buttons
+
+**option A** — steal readme-aura's unpack regex after `satori(...)`. might be enough without rewriting layouts.
+
+**option B** — carousel pattern: satori for static layout only, inject animation at root in a wrapper function. more predictable, already proven in our codebase.
+
+either way it's post-processing. not a hack — readme-aura does it too.
+
 ## GitHub README constraints
 
 - Profile README is static — no JS, no API calls on page load. Images are `<img>` tags only.

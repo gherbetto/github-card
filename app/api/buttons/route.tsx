@@ -58,7 +58,7 @@ function ButtonSlot({ button }: { button: SocialButtonDef }) {
 
 function getPillGeometry() {
   const pillW = BUTTON_MIN_WIDTH;
-  const pillH = BUTTON_HEIGHT - 20; // 68 - 10px inset top/bottom
+  const pillH = BUTTON_HEIGHT;
   const pillX = (BUTTON_WIDTH - pillW) / 2;
   const pillY = (BUTTON_HEIGHT - pillH) / 2;
   return { pillX, pillY, pillW, pillH };

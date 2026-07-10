@@ -1,5 +1,5 @@
-export const BUTTON_WIDTH = 180;
-export const BUTTON_HEIGHT = 68;
+export const BUTTON_WIDTH = 150;
+export const BUTTON_HEIGHT = 48;
 export const BUTTON_MIN_WIDTH = 150;
 export const BUTTON_RX = 24;
 export const BUTTON_FILL = "#1D2528";
